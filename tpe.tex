@@ -279,9 +279,9 @@ Las siguientes funciones auxiliares ser\'an usadas para varios problemas a lo la
 
 \aux{mejoresPaises}{j:JJOO}{[Pais]}{ \comp{paisDelDia(cronograma(j,d))}{ d \selec { \rango{1}{jornadaActual(j)} } } }
 
-\aux{paisDelDia}{cs:[Competencia]}{Pais}{\\ cab{ \comp{p}{ p \selec paisesCompetidores(cs), \\ ( (\forall \selector{q}{paisesCompetidores(cs)}) totalOroComp(cs,p) \geq totalOroComp(cs,q) ) \land ( (\forall \selector{q}{paisesCompetidores(cs)}, totalOroComp(cs,p) == totalOroComp(cs,q) ) p \leq q ) } } }
+\aux{paisDelDia}{cs:[Competencia]}{Pais}{cab([p | p \selec paisesCompetidores(cs), \\ ( (\forall \selector{q}{paisesCompetidores(cs)}) totalOroComp(cs,p) \geq totalOroComp(cs,q) ) \\ \land ( (\forall \selector{q}{paisesCompetidores(cs)}, totalOroComp(cs,p) == totalOroComp(cs,q) ) p \leq q ) ])}
 
-\aux{paisesCompetidores}{cs:[Competencia]}{[Pais]}{\comp{nacionalidad(a)}{a \selec participantes(c), c \selec (cs)}}
+\aux{paisesCompetidores}{cs:[Competencia]}{[Pais]}{\comp{p}{p \selec paises(c), c \selec (cs)}}
 
 \aux{totalOroComp}{cs:[Competencia], p:Pais}{\ent}{ \longitud{ { \comp{c}{ c \selec cs,  finalizada(c) \land ganoOroPais(c,p) } } } }
 
@@ -303,10 +303,43 @@ Las siguientes funciones auxiliares ser\'an usadas para varios problemas a lo la
 
 \aux{ganoMedallaPais}{c:Competencia, p:Pais}{\bool}{\\ ganoOroPais(c,p) \lor ganoPlataPais(c,p) \lor ganoBroncePais(c,p)}
 
-\aux{}{}{}{}
 \end{problema}
 
 \begin{problema}{transcurrirDia}{j: JJOO}{}
+\requiere{jornadaActual(j) \leq cantDias(j)}
+
+\medskip
+
+\modifica{j}
+
+\medskip
+
+\asegura{jornadaActual(j)==jornadaActual(\pre{j})+1}
+
+\asegura{mismos(atletas(j),atletas(\pre{j}))}
+
+\asegura[NoCambioCompetenciasAnteriores]{(\forall \selector{d}{\rango{1}{jornadaActual(\pre(j))-1}}) \\ mismoCronograma(cronograma(j,d),cronograma(\pre{j},d))}
+
+\asegura[NoCambioCompetenciasSiguientes]{(\forall \selector{d}{\rango{jornadaActual(\pre{j})+1}{cantDias(j)}}) \\ mismoCronograma(cronograma(j,d),cronograma(\pre{j},d))}
+
+\asegura[NoCambioFinalizadas]{ (\forall \selector{c_{1}}{cronograma(\pre{j},jornadaActual(\pre{j})), finalizada(c_{1})}) \\ ( (\exists \selector{c_{2}}{cronograma(j,jornadaActual(\pre{j}))}) mismaCompetencia(c_{1},c_{2}) ) }
+
+\asegura[LasNoFinalizadasTerminaronBien]{(\forall \selector{c_{1}}{cronograma(\pre{j},jornadaActual(\pre{j})), \lnot finalizada(c_{1})}) \\ ( \exists \selector{c_{2}}{cronograma(j,jornadaActual(\pre{j}))}) categoria(c_{1})==categoria(c_{2}) \land \\ mismos(participantes(c_{1}),participantes(c_{2})) \land finalizada(c_{2}) \\ \land ganaronCapaces(c_{2}) \land controlAntiDopingCorrecto(c_{2}) )}
+
+\asegura{ \longitud{cronograma(\pre{j},jornadaActual(\pre{j}))} == \longitud{cronograma(j,jornadaActual(\pre{j}))} }
+
+\asegura[PorcentajeDopingCorrecto]{ \longitud{atletasDopados(cronograma(j,jornadaActual(\pre{j})))} / \\ \longitud{cronograma(j,jornadaActual(\pre{j}))} \leq 0.05 }
+(Justificaci\'on: como en cada competencia se le realiza el control antidoping a un \'unico atleta, la cantidad de atletas controlados es igual a la cantidad de competencias del d\'ia.)
+
+\medskip
+
+\aux{mismoCronograma}{$cs_1,cs_2$:[Competencia]}{\bool}{( (\forall \selector{c_{1}}{cs_{1}}) ( (\exists \selector{c_{2}}{cs_{2}}) mismaCompetencia(c_{1},c_{2}) ) \\ \land ( (\forall \selector{c_{2}}{cs_{2}}) ( (\exists \selector{c_{1}}{cs_{1}}) mismaCompetencia(c_{1},c_{2}) ) \land \longitud{cs_{1}}==\longitud{cs_{2}} )}
+
+\aux{ganaronCapaces}{c:Competencia}{\bool}{ incluida(ranking(c),participantes(c)) \\ \land ( (\forall \selector{i}{\rango{0}{\longitud{ranking(c)} - 1}}) \\ capacidad(ranking(c)_{i},\prm{categoria(c)}) \geq capacidad(ranking(c)_{i+1},\prm{categoria(c)}) ) }
+
+\aux{controlAntiDopingCorrecto}{c:Competencia}{\bool}{\\ incluida(lesTocoControlAntiDoping(c),participantes(c)) \\ \land \longitud{lesTocoControlAntiDoping(c)} == 1 }
+
+\aux{atletasDopados}{cs:[Competencia]}{[Atleta]}{ [a | a \selec lesTocoControlAntiDoping(c), \\ c \selec cs, finalizada(c), leDioPositivo(c,a)] }
 \end{problema}
 
 \section{Auxiliares}
