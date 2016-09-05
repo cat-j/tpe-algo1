@@ -1,0 +1,280 @@
+\documentclass[a4paper]{article}
+
+\usepackage[spanish]{babel}
+\usepackage[latin1]{inputenc}
+
+\usepackage{framed}
+\input{Algo1Macros}
+
+\newcommand{\comen}[2]{%
+\begin{framed}	
+\noindent \textsf{#1:} #2
+\end{framed}
+}
+
+
+
+\begin{document}
+
+\materia{Algoritmos y Estructura de Datos I}
+\cuatrimestre{2}
+\anio{2016}
+
+%\fecha{26 de agosto de 2016}
+
+\nombre{\LARGE TPE OJOTA (Organizaci\'on de Juegos Ol\'impicos Tp de Algoritmos 1) v1.0}
+
+\titulotp
+
+
+\section{Auxiliares definidas por nosotros}
+
+\aux{participa}{j:JJOO,a:Atleta}{\bool}{(\exists \selector{c}{competencias(j)}) a \in participantes(c)}
+\aux{paises}{j:JJOO}{[Pais]}{ \comp{nacionalidad(a)}{a \selec atletas(j)} }
+
+\section{Tipos}
+
+\input{tipos/tipos.tex}
+
+\section{Atleta}
+\input{tipos/atleta.tex}
+
+\begin{problema}{especialidad}{a: Atleta}{Deporte}
+\asegura {result \in deportes(a)}
+\asegura {(\forall \selector{d}{deportes(a)}) capacidad(a,d) \leq capacidad(a,\res)}
+\end{problema}
+
+\begin{problema}{entrenarNuevoDeporte}{a: Atleta, d: Deporte, c: \ent}{}
+\requiere{\lnot(d \in deportes(a))}
+\requiere{0 \leq c \leq 100}
+\medskip
+\modifica{a}
+\medskip
+\asegura{nombre(a) == nombre(\pre{a})}
+\asegura{sexo(a) == sexo(\pre{a})}
+\asegura{a\textrm{\it{\~n}}oNacimiento(a) == a\textrm{\it{\~n}}oNacimiento(\pre{a})}
+\asegura{nacionalidad(a) == nacionalidad(\pre{a})}
+\asegura{ciaNumber(a) == ciaNumber(\pre{a})}
+\asegura[SeAgregoDeporte]{mismos( deportes(a), d:deportes(\pre{a}) ) \land ordenada(deportes(a))}
+\asegura[LosOtrosNoCambiaron]{(\forall \selector{x}{deportes(a), x \neq d}) capacidad(a,x) == capacidad(\pre{a},x)}
+\asegura[CapacidadCorrecta]{capacidad(a,d) == c}
+\end{problema}
+
+
+
+\section{Competencia}
+
+\input{tipos/competencia.tex}
+
+\begin{problema}{finalizarCompetencia}{c: Competencia, posiciones: [Atleta], control: [(Atleta, \bool)]}{}
+\requiere{\lnot finalizada(c)}
+\requiere[PosicionesCumplenInvariante]{incluida(posiciones,participantes(c))}
+\requiere[ControladosCumplenInvariante]{incluida(atletasControlados(control),participantes(c))}
+\medskip
+\modifica{c}
+\medskip
+\asegura{( categoria(c) == categoria(\pre{c}) ) \land mismos(participantes(c),participantes(\pre{c}))}
+\asegura{finalizada(c)}
+\asegura[RankingCorrecto]{ranking(c) == posiciones}
+\asegura[ControlCorrecto]{mismos(lesTocoControlAntiDoping(c),atletasControlados(control))}
+\asegura[ResultadoAntiDopingCorrecto]{(\forall \selector{a}{control}) \sgd{a} == leDioPositivo(c,\prm{a})}
+\medskip
+\aux{atletasControlados}{c:[(Atleta,\bool)]}{[Atleta]}{\comp{\prm{a}}{a \selec c }}
+\end{problema}
+
+\begin{problema}{linfordChristie}{c: Competencia, a: Atleta}{}
+\requiere{\lnot finalizada(c)}
+\requiere{a \in participantes(c)}
+\medskip
+\modifica{c}
+\medskip
+\asegura{\lnot finalizada(c) \land categoria(c) == categoria(\pre{c})}
+\asegura[AtletaDescalificado]{mismos(participantes(\pre{c}),a:participantes(c))}
+\end{problema}
+
+\begin{problema}{gananLosMasCapaces}{c: Competencia}{\bool}
+\requiere{finalizada(c)}
+
+\medskip
+
+\asegura{\res == (\forall \selector{i}{\rangoca{1}{\longitud{ranking(c)}-1}}) \\ capacidadCompetencia(c,ranking(c)_{i}) \geq capacidadCompetencia(c,ranking(c)_{i+1})}
+
+\medskip
+
+\aux{capacidadCompetencia}{c:Competencia,a:Atleta}{\ent}{capacidad(a,\prm{categoria(c)})}
+\end{problema}
+
+\begin{problema}{sancionarTramposos}{c: Competencia}{}
+\requiere{finalizada(c)}
+
+\medskip
+
+\modifica{c}
+
+\medskip
+
+\asegura{finalizada(c) \land categoria(c) == categoria(\pre{c}) \land mismos(participantes(c),participantes(\pre{c}))}
+
+\asegura{ranking(c) == rankingSinTramposos(\pre{c})}
+
+\asegura{mismos(lesTocoControlAntiDoping(c),lesTocoControlAntiDoping(\pre{c}))}
+
+\asegura{(\forall \selector{a}{lesTocoControlAntiDoping(c)}) leDioPositivo(c,a) == leDioPositivo(\pre{c},a)}
+
+\medskip
+
+\aux{rankingSinTramposos}{c:Competencia}{[Atleta]}{ \comp{a} {a \selec ranking(c),\\ a \in lesTocoControlAntiDoping(c) \Then leDioPositivo(c,a) == \False} }
+\end{problema}
+
+\section{JJOO}
+\input{tipos/jjoo.tex}
+
+\begin{problema}{dePaseo}{j: JJOO}{[Atleta]}
+\asegura{mismos(\res,noParticipan(j))}
+\aux{noParticipan}{j:JJOO}{[Atleta]}{ \comp{a} {a \selec atletas(j), \lnot participa(j,a)} } 
+\end{problema}
+
+\begin{problema}{medallero}{j: JJOO}{[(Pais, [\ent])]}
+\asegura[OrdenadoPorOro]{(\forall \selector{i}{ \rangoca{0}{\longitud{\res}-1} }) \sgd{\res_{i}}_{0} \geq \sgd{\res_{i+1}}_{0}}
+
+\asegura[OrdenadoPorPlata]{(\forall \selector{i}{ \rangoca{0}{\longitud{\res}-1} }, \sgd{\res_{i}}_{0} == \sgd{\res_{i+1}}_{0}) \sgd{\res_{i}}_{1} \geq \sgd{\res_{i+1}}_{1}}
+
+\asegura[OrdenadoPorBronce]{(\forall \selector{i}{ \rangoca{0}{\longitud{\res}-1} }, \sgd{\res_{i}}_{1} == \sgd{\res_{i+1}}_{1}) \sgd{\res_{i}}_{2} \geq \sgd{\res_{i+1}}_{2}}
+
+\asegura[NoHayPaisesRepetidos]{sinRepetidos(\comp{ \prm{p} } {p \selec \res})}
+
+\asegura[TodosGanaronMedallas]{(\forall \selector{p}{\res}) \sum \sgd{p} > 0}
+
+\asegura[EstanTodosLosQueGanaron]{(\forall \selector{p}{paises(j),totalMedallasPais(j,p)>0}) ( (\exists \selector{q}{\res}) \prm{q} == p )}
+
+\asegura[CantidadCorrectaDeMedallas]{(\forall \selector{p}{\res}) \\ ( (totalOroPais(j,\prm{p}) == \sgd{p}_{0}) \land (totalPlataPais(j,\prm{p}) == \sgd{p}_{1}) \\ \land (totalBroncePais(j,\prm{p}) == \sgd{p}_{2}) )}
+
+\medskip
+
+\aux{totalOroPais}{j:JJOO,p:Pais}{\ent}{ \longitud{ \comp{c}{c \selec competencias(j), finalizada(c) \land ganoOroPais(c,p)} } }
+
+\aux{totalPlataPais}{j:JJOO,p:Pais}{\ent}{ \longitud{ \comp{c}{c \selec competencias(j), finalizada(c) \land ganoPlataPais(c,p)} } }
+
+\aux{totalBroncePais}{j:JJOO,p:Pais}{\ent}{ \longitud{ \comp{c}{c \selec competencias(j), finalizada(c) \land ganoBroncePais(c,p)} } }
+
+\aux{totalMedallasPais}{j:JJOO,p:Pais}{\ent}{totalOroPais(j,p)+totalPlataPais(j,p)+totalBroncePais(j,p)}
+
+\aux{ganoOroPais}{c:Competencia,p:Pais}{\bool}{\longitud{ranking(c)} \geq 1 \land nacionalidad(ranking(c)_{0})==pais}
+
+\aux{ganoPlataPais}{c:Competencia,p:Pais}{\bool}{\longitud{ranking(c)} \geq 2 \land nacionalidad(ranking(c)_{1})==pais}
+
+\aux{ganoBroncePais}{c:Competencia,p:Pais}{\bool}{\longitud{ranking(c)} \geq 3 \land nacionalidad(ranking(c)_{2})==pais}
+\end{problema}
+
+\begin{problema}{boicotPorDisciplina}{j: JJOO, cat: (Deporte, Sexo), p: Pais}{\ent}
+\requiere[CategoriaValida]{(\exists \selector{c}{competencias(j)}) categoria(c) == cat}
+
+\medskip
+
+\modifica{j}
+
+\medskip
+
+\asegura{a\textrm{\it{\~n}}o(j) == a\textrm{\it{\~n}}o(\pre{j}) \land cantDias(j) == cantDias(\pre{j}) \land jornadaActual(j) == jornadaActual(\pre{j}) \land mismos(atletas(j),atletas(\pre{j}))}
+
+\asegura[NoModificaOtrasCompetencias]{(\forall \selector{d}{\rango{1}{cantDias(j)}}) \\ ( (\forall \selector{c_{1}}{cronograma(\pre{j},d), categoria(c_{1}) \neq cat}) ( (\exists \selector{c_{2}}{cronograma(j,d)}) mismaCompetencia(c_{1},c_{2}) ) )}
+
+\asegura[NoCreaCompetenciasNuevas]{(\forall \selector{d}{\rango{1}{cantDias(j)}}) \\ ( (\forall \selector{c_{1}}{cronograma(j,d), categoria(c_{1}) \neq cat}) ( (\exists \selector{c_{2}}{cronograma(\pre{j},d)}) mismaCompetencia(c_{1},c_{2}) ) )}
+
+\asegura{(\forall \selector{d}{\rango{1}{cantDias(j)}}) \longitud{cronograma(j,d)} == \longitud{cronograma(\pre{j},d)}}
+
+\asegura[CatFueModificada]{(\exists \selector{c_{1}}{competencias(j), categoria(c_{1}) == cat}) \\ ( (\exists \selector{c_{2}}{competencias(\pre{j}), categoria(c_{2}) == cat}) \\
+( mismos(participantes(c_{1}),sacarPais(p,participantes(c_{2}))) ) \\
+\land (finalizada(c_{1})==finalizada(c_{2})) \\
+\land ( finalizada(c_{1}) \Then ( (ranking(c_{1})==sacarPais(p,ranking(c_{2})))
+\\ \land ( mismos(lesTocoControlAntiDoping(c_{1}),sacarPais(p,lesTocoControlAntiDoping(c_{2}))) ) \\
+ \land ( (\forall \selector{a}{lesTocoControlAntiDoping(c_{1})}) leDioPositivo(c_{1},a)==leDioPositivo(c_{2},a) ) ) ) )}
+
+\asegura[ResultadoCorrecto]{\res == \longitud{\comp {a}{a \selec atletas(j),nacionalidad(a) == p \land participa(j,a)}}}
+
+\medskip
+
+\aux{sacarPais}{p:Pais,l:[Atleta]}{[Atleta]}{\comp {a}{a \selec l, nacionalidad(a) \neq p}}
+
+\aux{mismaCompetencia}{$c_1$,$c_2$:Competencia}{\bool}{ (categoria(c_{1})==categoria(c_{2})) \\
+\land ( mismos(participantes(c_{2}),participantes(c_{}2)) ) \land (finalizada(c_{1})==finalizada(c_{2})) \\
+\land ( finalizada(c_{1}) \Then ( (ranking(c_{1})==ranking(c_{2})) \\
+\land ( mismos(lesTocoControlAntiDoping(c_{1}),lesTocoControlAntiDoping(c_{2}) ) \\
+\land ( (\forall \selector{a}{lesTocoControlAntiDoping(c_{1})}) leDioPositivo(c_{1},a)==leDioPositivo(c_{2},a) ) ) ) }
+\end{problema}
+
+\begin{problema}{losMasFracasados}{j: JJOO, p: Pais}{[Atleta]}
+\asegura[Participaron]{(\forall \selector{a}{\res}) a \in losQueMasParticiparon(j,p)}
+
+\asegura[NoGanaronNada]{(\forall \selector{a}{\res}) totalMedallasAtleta(j,a) == 0}
+
+\asegura[EstanTodos]{(\forall \selector{a}{losQueMasParticiparon(j,p),totalMedallasAtleta(j,a)==0}) a \in \res}
+
+\medskip
+
+\aux{losQueMasParticiparon}{j:JJOO,p:Pais}{[Atleta]}{\comp {a}{a \selec atletas(j), nacionalidad(a)==p \\
+\land ((\forall \selector{b}{atletas(j),nacionalidad(b)==p}) cantCompetencias(j,a) \geq cantCompetencias(j,b))}}
+
+\aux{cantCompetencias}{j:JJOO,a:Atleta}{\ent}{\longitud{\comp {c}{c \selec competencias(j), a \in participantes(c)}}}
+
+\aux{totalMedallasAtleta}{j:JJOO,a:Atleta}{\ent}{\\ \longitud{\comp{c}{c \selec competencias(j), finalizada(c)\land ganoMedallaAtleta(c,a)}}}
+
+\aux{ganoMedallaAtleta}{c:Competencia,a:Atleta}{\bool}{(\longitud{ranking(c)} \geq 1 \land ranking(c)_{0}==a) \\ \lor (\longitud{ranking(c)} \geq 2 \land ranking(c)_{1}==a) \lor (\longitud{ranking(c)} \geq 3 \land ranking(c)_{2}==a)}
+\end{problema}
+
+\begin{problema}{liuSong}{j: JJOO, a: Atleta, p: Pa\'is}{}
+\requiere{a \in atletas(j)}
+
+\medskip
+
+\modifica{j}
+
+\medskip
+
+\asegura{a\textrm{\it{\~n}}o(j) == a\textrm{\it{\~n}}o(\pre{j}) \land cantDias(j) == cantDias(\pre{j}) \land jornadaActual(j)==jornadaActual(\pre{j})}
+
+\asegura[SoloCambioElAtletaDeseado]{ (\forall \selector{d}{ \rango{1}{cantDias(j)} }) \\ ( (\forall \selector{ c_{1} }{cronograma(\pre{j},d)}) ( (\exists \selector{ c_{2} }{cronograma(j,d)}) mismaCompNacCamb(c_{1},c_{2},a,p) ) \\ \land \longitud{cronograma(j,d)} == \longitud{cronograma(\pre{j},d)} ) }
+
+\medskip
+
+\aux{mismoNacCamb}{$a_1$,$a_2$:Atleta,p:Pais}{\bool}{nombre(a_{1})==nombre(a_{2}) \land sexo(a_{1})==sexo(a_{2}) \\ \land a\textrm{\it{\~n}}oNacimiento(a_{1})==a\textrm{\it{\~n}}oNacimiento(a_{2}) \land nacionalidad(a_{2})==p \land ciaNumber(a_{1})==ciaNumber(a_{2}) \\ \land deportes(a_{1})==deportes(a_{2}) \land ( (\forall \selector{d}{deportes(a_{1})}) capacidad(a_{1},d)==capacidad(a_{2},d) ) }
+
+\aux{mismosAtlNacCamb}{$l_1$,$l_2$:[Atleta],a:Atleta,p:Pais}{\bool}{\\( (\forall \selector{a_{1}}{l_{1}, ciaNumber(a_{1}) \neq ciaNumber(a)}) ( (\exists \selector{a_{2}}{l_{2}}) a_{1}==a_{2} ) ) \\ \land ( (\exists \selector{a_{1}}{l_{1}}, ciaNumber(a_{1})==ciaNumber(a_{2})) \Then ( (\exists \selector{a_{2}}{l_{2}}) mismosNacCamb(a_{1},a_{2},p) ) ) \\ \land \longitud{l_{1}} == \longitud{l_{2}}}
+
+\aux{mismaCompNacCamb}{$c_1$,$c_2$:Competencia,a:Atleta,p:Pais}{\bool}{\\ categoria(c_{1})==categoria(c_{2}) \land mismosAtlNacCamb(participantes(c_{1}),participantes(c_{2}),a,p) \\ \land finalizada(c_{1})==finalizada(c_{2}) \\ \land ( finalizada(c_{1}) \Then ( mismosAtlNacCamb(ranking(c_{1}),ranking(c_{2}),a,p) \\ \land mismoOrden(ranking(c_{1}),ranking(c_{2})) \\ \land mismosAtlNacCamb(lesTocoControlAntiDoping(c_{1}),lesTocoControlAntiDoping(c_{2}),a,p) \\ \land ( (\forall \selector{b}{lesTocoControlAntiDoping(c_{1}), ciaNumber(b) \neq ciaNumber(a)}) \\ leDioPositivo(c_{1},b)==leDioPositivo(c_{2},b) ) \\ \land ( (\exists \selector{a_{1}}{lesTocoControlAntiDoping(c_{1})}, \selector{a_{2}}{lesTocoControlAntiDoping(c_{2})}) mismoNacCamb(a_{1},a_{2},p) ) \Then leDioPositivo(c_{1},a_{1})==leDioPositivo(c_{2},a_{2}) ) )}
+
+\aux{mismoOrden}{l,s:[Atleta]}{\bool}{(\forall \selector{i}{ \rangoca{0}{\longitud{l}} }) ciaNumber(l_{i})==ciaNumber(s_{i})}
+\end{problema}
+
+\begin{problema}{stevenBradbury}{j: JJOO}{Atleta}
+\asegura{\res \in ganaronOro(j)}
+\asegura[MenosCapaz]{(\forall \selector{a}{ganaronOro(j)}) menorCapOro(j,a) \geq menorCapOro(j,\res)}
+
+\medskip
+
+\aux{menorCapOro}{j:JJOO,a:Atleta}{\ent}{minimo(capacidadOro(j,a))}
+
+
+\aux{capacidadOro}{j:JJOO,a:Atleta}{[\ent]}{\comp{capacidad(a,d)}{d \selec deportesOro(j,a)}}
+
+\aux{deportesOro}{j:JJOO,a:Atleta}{[Deporte]}{\\ \comp {prm(categoria(c))}{c \selec competencias(j), finalizada(c) \land ganoOroAtleta(c,a)}}
+
+\aux{ganoOroAtleta}{c:Competencia,a:Atleta}{\bool}{\longitud{ranking(c)} \geq 1 \land ranking(c)_{0}==a}
+
+\end{problema}
+
+\begin{problema}{uyOrdenadoAs\'iHayUnPatr\'on}{j: JJOO}{\bool}
+\end{problema}
+
+
+\begin{problema}{sequ\'iaOl\'impica}{j: JJOO}{[Pa\'is]}
+\end{problema}
+
+\begin{problema}{transcurrirDia}{j: JJOO}{}
+\end{problema}
+
+\section{Auxiliares}
+
+\input{auxiliaresTipos.tex}
+
+\end{document}
